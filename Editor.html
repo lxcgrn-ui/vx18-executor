@@ -3,47 +3,313 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monaco Tab Editor</title>
 
 <style>
-:root {
-    --winform-bg: #000;
+* {
+    box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     margin: 0;
-    height: 100%;
-    background: var(--winform-bg);
-}
-
-textarea {
     width: 100%;
     height: 100%;
-    border: none;
-    outline: none;
-    resize: none;
-    background: transparent;
+    overflow: hidden;
+    background: #0f0b22;
+    font-family: "Segoe UI", sans-serif;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #0f0b22;
+}
+
+#tabs {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    background: #0f0b22;
+    border-bottom: 1px solid rgba(120, 90, 255, 0.18);
+}
+
+.tab {
+    height: 26px;
+    min-width: 110px;
+    max-width: 180px;
+    padding: 0 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(120, 90, 255, 0.18);
+    background: rgba(255, 255, 255, 0.035);
+    color: rgba(255, 255, 255, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+}
+
+.tab.active {
+    background: rgba(91, 75, 176, 0.22);
+    border-color: rgba(150, 120, 255, 0.38);
     color: white;
-    font-family: Consolas;
+}
+
+.tab-title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.tab-close {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.55);
     font-size: 14px;
-    padding: 10px;
+}
+
+.tab-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+}
+
+#new-tab {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: 1px solid rgba(120, 90, 255, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 22px;
+}
+
+#new-tab:hover {
+    background: rgba(91, 75, 176, 0.25);
+}
+
+#editor {
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
 }
 </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 </head>
 
 <body>
-<textarea id="editor"></textarea>
+<div id="app">
+    <div id="tabs">
+        <button id="new-tab">+</button>
+    </div>
+
+    <div id="editor"></div>
+</div>
 
 <script>
+let editor;
+let activeTabId = null;
+let tabCounter = 1;
+
+const tabs = [
+    {
+        id: "tab_1",
+        title: "Script 1",
+        language: "lua",
+        content: "-- Spectra Editor\nprint('Hello World')"
+    }
+];
+
+function renderTabs() {
+    const tabsBar = document.getElementById("tabs");
+    const newTabButton = document.getElementById("new-tab");
+
+    document.querySelectorAll(".tab").forEach(tab => tab.remove());
+
+    tabs.forEach(tab => {
+        const tabEl = document.createElement("div");
+        tabEl.className = "tab" + (tab.id === activeTabId ? " active" : "");
+        tabEl.onclick = () => switchTab(tab.id);
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "tab-title";
+        titleEl.textContent = tab.title;
+
+        const closeEl = document.createElement("div");
+        closeEl.className = "tab-close";
+        closeEl.textContent = "×";
+
+        closeEl.onclick = (e) => {
+            e.stopPropagation();
+            closeTab(tab.id);
+        };
+
+        tabEl.appendChild(titleEl);
+        tabEl.appendChild(closeEl);
+
+        tabsBar.insertBefore(tabEl, newTabButton);
+    });
+}
+
+function saveActiveTabContent() {
+    if (!editor || !activeTabId) return;
+
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) {
+        tab.content = editor.getValue();
+    }
+}
+
+function switchTab(id) {
+    saveActiveTabContent();
+
+    activeTabId = id;
+
+    const tab = tabs.find(t => t.id === id);
+    if (!tab || !editor) return;
+
+    monaco.editor.setModelLanguage(editor.getModel(), tab.language);
+    editor.setValue(tab.content);
+
+    renderTabs();
+}
+
+function createTab() {
+    saveActiveTabContent();
+
+    tabCounter++;
+
+    const newTab = {
+        id: "tab_" + tabCounter,
+        title: "Script " + tabCounter,
+        language: "lua",
+        content: "-- New Script\n"
+    };
+
+    tabs.push(newTab);
+    switchTab(newTab.id);
+}
+
+function closeTab(id) {
+    if (tabs.length <= 1) return;
+
+    const index = tabs.findIndex(t => t.id === id);
+    if (index === -1) return;
+
+    tabs.splice(index, 1);
+
+    if (activeTabId === id) {
+        const nextTab = tabs[index] || tabs[index - 1];
+        activeTabId = nextTab.id;
+        editor.setValue(nextTab.content);
+    }
+
+    renderTabs();
+}
+
 function getContent() {
-    return document.getElementById("editor").value;
+    saveActiveTabContent();
+
+    const tab = tabs.find(t => t.id === activeTabId);
+    return tab ? tab.content : "";
 }
+
+function setContent(text) {
+    if (!editor || !activeTabId) return;
+
+    editor.setValue(text);
+
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) tab.content = text;
+}
+
+function getAllTabs() {
+    saveActiveTabContent();
+    return JSON.stringify(tabs);
+}
+
 function setBackground(color) {
-    document.documentElement.style.setProperty('--winform-bg', color);
+    document.body.style.background = color;
+    document.getElementById("app").style.background = color;
+    document.getElementById("tabs").style.background = color;
 }
-document.getElementById("editor").addEventListener("input", () => {
-    window.chrome.webview.postMessage({
-        type: "content",
-        data: getContent()
+
+document.getElementById("new-tab").onclick = createTab;
+
+require.config({
+    paths: {
+        vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"
+    }
+});
+
+require(["vs/editor/editor.main"], function () {
+    monaco.editor.defineTheme("spectra-dark", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [
+            { token: "comment", foreground: "7f7f9f" },
+            { token: "keyword", foreground: "c084fc" },
+            { token: "string", foreground: "a7f3d0" },
+            { token: "number", foreground: "f9a8d4" }
+        ],
+        colors: {
+            "editor.background": "#0f0b22",
+            "editor.foreground": "#ffffff",
+            "editor.lineHighlightBackground": "#1b143f",
+            "editorCursor.foreground": "#b79cff",
+            "editor.selectionBackground": "#5b4bb066",
+            "editorLineNumber.foreground": "#5f5a78",
+            "editorLineNumber.activeForeground": "#c4b5fd"
+        }
+    });
+
+    editor = monaco.editor.create(document.getElementById("editor"), {
+        value: tabs[0].content,
+        language: "lua",
+        theme: "spectra-dark",
+        fontSize: 14,
+        fontFamily: "Consolas, 'Courier New', monospace",
+        minimap: {
+            enabled: false
+        },
+        smoothScrolling: true,
+        cursorSmoothCaretAnimation: "on",
+        cursorBlinking: "smooth",
+        automaticLayout: true,
+        scrollBeyondLastLine: false,
+        roundedSelection: true,
+        padding: {
+            top: 12,
+            bottom: 12
+        }
+    });
+
+    activeTabId = tabs[0].id;
+    renderTabs();
+
+    editor.onDidChangeModelContent(() => {
+        saveActiveTabContent();
+
+        if (window.chrome && window.chrome.webview) {
+            window.chrome.webview.postMessage({
+                type: "content",
+                activeTab: activeTabId,
+                content: getContent()
+            });
+        }
     });
 });
 </script>
