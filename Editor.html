@@ -29,24 +29,24 @@ body {
 }
 
 #tabs {
-    height: 38px;
+    height: 46px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px;
+    gap: 8px;
+    padding: 8px;
     background: rgb(12,12,12);
-    border-bottom: 1px solid rgba(120, 90, 255, 0.18);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .tab {
-    height: 26px;
-    min-width: 110px;
-    max-width: 180px;
-    padding: 0 8px;
+    height: 32px;
+    min-width: 120px;
+    max-width: 200px;
+    padding: 0 10px;
     border-radius: 8px;
-    border: 1px solid rgba(120, 90, 255, 0.18);
-    background: rgba(255, 255, 255, 0.035);
-    color: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.75);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -57,8 +57,8 @@ body {
 }
 
 .tab.active {
-    background: rgba(91, 75, 176, 0.22);
-    border-color: rgba(150, 120, 255, 0.38);
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.15);
     color: white;
 }
 
@@ -75,29 +75,29 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255,255,255,0.55);
     font-size: 14px;
 }
 
 .tab-close:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255,255,255,0.15);
     color: white;
 }
 
 #new-tab {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 8px;
-    border: 1px solid rgba(120, 90, 255, 0.22);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
     color: white;
     cursor: pointer;
     font-size: 18px;
-    line-height: 22px;
+    line-height: 24px;
 }
 
 #new-tab:hover {
-    background: rgba(91, 75, 176, 0.25);
+    background: rgba(255,255,255,0.15);
 }
 
 #editor {
@@ -168,14 +168,11 @@ function saveActiveTabContent() {
     if (!editor || !activeTabId) return;
 
     const tab = tabs.find(t => t.id === activeTabId);
-    if (tab) {
-        tab.content = editor.getValue();
-    }
+    if (tab) tab.content = editor.getValue();
 }
 
 function switchTab(id) {
     saveActiveTabContent();
-
     activeTabId = id;
 
     const tab = tabs.find(t => t.id === id);
@@ -222,16 +219,13 @@ function closeTab(id) {
 
 function getContent() {
     saveActiveTabContent();
-
     const tab = tabs.find(t => t.id === activeTabId);
     return tab ? tab.content : "";
 }
 
 function setContent(text) {
     if (!editor || !activeTabId) return;
-
     editor.setValue(text);
-
     const tab = tabs.find(t => t.id === activeTabId);
     if (tab) tab.content = text;
 }
@@ -256,45 +250,23 @@ require.config({
 });
 
 require(["vs/editor/editor.main"], function () {
-    monaco.editor.defineTheme("spectra-dark", {
+    monaco.editor.defineTheme("dark-clean", {
         base: "vs-dark",
         inherit: true,
-        rules: [
-            { token: "comment", foreground: "7f7f9f" },
-            { token: "keyword", foreground: "c084fc" },
-            { token: "string", foreground: "a7f3d0" },
-            { token: "number", foreground: "f9a8d4" }
-        ],
+        rules: [],
         colors: {
-            "editor.background": "#0C0C0C",
-            "editor.foreground": "#ffffff",
-            "editor.lineHighlightBackground": "#1b143f",
-            "editorCursor.foreground": "#b79cff",
-            "editor.selectionBackground": "#5b4bb066",
-            "editorLineNumber.foreground": "#5f5a78",
-            "editorLineNumber.activeForeground": "#c4b5fd"
+            "editor.background": "#0C0C0C"
         }
     });
 
     editor = monaco.editor.create(document.getElementById("editor"), {
         value: tabs[0].content,
         language: "lua",
-        theme: "spectra-dark",
+        theme: "dark-clean",
         fontSize: 14,
-        fontFamily: "Consolas, 'Courier New', monospace",
-        minimap: {
-            enabled: false
-        },
+        minimap: { enabled: false },
         smoothScrolling: true,
-        cursorSmoothCaretAnimation: "on",
-        cursorBlinking: "smooth",
-        automaticLayout: true,
-        scrollBeyondLastLine: false,
-        roundedSelection: true,
-        padding: {
-            top: 12,
-            bottom: 12
-        }
+        automaticLayout: true
     });
 
     activeTabId = tabs[0].id;
